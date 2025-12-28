@@ -32,6 +32,11 @@ echo "   DB Port: $DB_PORT"
 echo "⏸️  Stopping existing services..."
 docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down || true
 
+#Login to registry
+echo "🔐 Logging into Docker registry..."
+echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+
+
 # Pull latest images
 echo "📦 Pulling latest images..."
 docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT pull || true
