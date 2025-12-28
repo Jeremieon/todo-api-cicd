@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from config import settings
+from sqlalchemy import text
 import time
 import crud
 import models
@@ -31,8 +32,7 @@ def read_root():
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
     try:
-        # Test database connection
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         return {
             "status": "healthy",
             "environment": settings.environment,
