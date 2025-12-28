@@ -8,12 +8,15 @@ import models
 import schemas
 from database import engine, get_db
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.app_name, version=settings.version)
 
 deployment_time = time.time()
+
+
+@app.on_event("startup")
+def on_startup():
+    models.Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")
