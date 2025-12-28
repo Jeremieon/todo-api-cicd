@@ -30,15 +30,15 @@ echo "   DB Port: $DB_PORT"
 
 # Stop existing services
 echo "⏸️  Stopping existing services..."
-docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down || true
+docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down || true
 
 # Pull latest images
 echo "📦 Pulling latest images..."
-docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT pull || true
+docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT pull || true
 
 # Build and start services
 echo "🏗️  Building and starting services..."
-docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT up -d --build
+docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT up -d --build
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be healthy..."
@@ -66,10 +66,10 @@ done
 # Health check failed - show logs and rollback
 echo "❌ Health check failed after $MAX_RETRIES attempts"
 echo "📋 Application logs:"
-docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT logs --tail=50 app
+docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT logs --tail=50 app
 
 echo "🔄 Rolling back..."
-docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down
+docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down
 
 echo "❌ Deployment failed!"
 exit 1
