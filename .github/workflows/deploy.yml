@@ -32,7 +32,7 @@ jobs:
     runs-on: self-hosted
     environment:
       name: staging
-      url: http://192.168.0.67:8001
+      url: http://192.168.0.69:8001
 
     steps:
       - name: Checkout code
@@ -54,9 +54,9 @@ jobs:
         if: success()
         run: |
           echo "✅ Staging deployment successful!"
-          echo "🔗 Application: http://192.168.0.67:8001"
-          echo "🔗 API Docs: http://192.168.0.67:8001/docs"
-          echo "🔗 Health: http://192.168.0.67:8001/health"
+          echo "🔗 Application: http://192.168.0.69:8001"
+          echo "🔗 API Docs: http://192.168.0.69:8001/docs"
+          echo "🔗 Health: http://192.168.0.69:8001/health"
 
   deploy-production:
     needs: test
@@ -64,7 +64,7 @@ jobs:
     runs-on: self-hosted
     environment:
       name: production
-      url: http://192.168.0.67:8000
+      url: http://192.168.0.69:8000
 
     steps:
       - name: Checkout code
@@ -83,7 +83,7 @@ jobs:
         if: success()
         run: |
           echo "🎉 Production deployment successful!"
-          echo "🔗 Application: http://192.168.0.67:8000"
-          echo "🔗 API Docs: http://192.168.0.67:8000/docs"
-          echo "🔗 Health: http://192.168.0.67:8000/health"
-          echo "🔗 Admin: http://192.168.0.67:8000/admin"
+          echo "🔗 Application: http://192.168.0.69:8000"
+          echo "🔗 API Docs: http://192.168.0.69:8000/docs"
+          echo "🔗 Health: http://192.168.0.69:8000/health"
+          echo "🔗 Admin: http://192.168.0.69:8000/admin"
