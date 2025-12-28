@@ -41,7 +41,8 @@ jobs:
       - name: Set version
         id: version
         run: echo "VERSION=staging-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
       - name: Deploy to Staging
         run: |
           chmod +x deploy.sh

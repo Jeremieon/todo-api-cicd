@@ -33,8 +33,8 @@ echo "⏸️  Stopping existing services..."
 docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down || true
 
 #Login to registry
-echo "🔐 Logging into Docker registry..."
-echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+#echo "🔐 Logging into Docker registry..."
+#echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
 
 
 # Pull latest images
