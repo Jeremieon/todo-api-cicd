@@ -1,0 +1,86 @@
+name: CI/CD Pipeline with Database
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -v
+
+  deploy-staging:
+    needs: test
+    if: github.ref == 'refs/heads/dev'
+    runs-on: self-hosted
+    environment:
+      name: staging
+      url: http://192.168.0.67:8001
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set version
+        id: version
+        run: echo "VERSION=staging-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Staging
+        run: |
+          chmod +x deploy.sh
+          ./deploy.sh staging ${{ steps.version.outputs.VERSION }}
+
+      - name: Show deployment info
+        if: success()
+        run: |
+          echo "✅ Staging deployment successful!"
+          echo "🔗 Application: http://192.168.0.67:8001"
+          echo "🔗 API Docs: http://192.168.0.67:8001/docs"
+          echo "🔗 Health: http://192.168.0.67:8001/health"
+
+  deploy-production:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    environment:
+      name: production
+      url: http://192.168.0.67:8000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set version
+        id: version
+        run: echo "VERSION=v4.0.0" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Production
+        run: |
+          chmod +x deploy.sh
+          ./deploy.sh production ${{ steps.version.outputs.VERSION }}
+
+      - name: Show deployment info
+        if: success()
+        run: |
+          echo "🎉 Production deployment successful!"
+          echo "🔗 Application: http://192.168.0.67:8000"
+          echo "🔗 API Docs: http://192.168.0.67:8000/docs"
+          echo "🔗 Health: http://192.168.0.67:8000/health"
+          echo "🔗 Admin: http://192.168.0.67:8000/admin"
