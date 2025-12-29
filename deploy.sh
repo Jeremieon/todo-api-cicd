@@ -28,35 +28,54 @@ echo "   Version: $VERSION"
 echo "   App Port: $APP_PORT"
 echo "   DB Port: $DB_PORT"
 
-# Stop existing services
-echo "⏸️  Stopping existing services..."
-docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down || true
-
-#Login to registry
-#echo "🔐 Logging into Docker registry..."
-#echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
-
+# Backup current database state (for rollback)
+echo "💾 Creating database backup..."
+BACKUP_FILE="backup_${ENVIRONMENT}_$(date +%Y%m%d_%H%M%S).sql"
+docker exec todo-db-${ENVIRONMENT} pg_dump -U postgres tododb > $BACKUP_FILE 2>/dev/null || echo "⚠️  No existing database to backup"
 
 # Pull latest images
 echo "📦 Pulling latest images..."
-docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT pull || true
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT pull || true
 
-# Build and start services
-echo "🏗️  Building and starting services..."
-docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT up -d --build
+# Build new image
+echo "🏗️  Building new image..."
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT build
 
-# Wait for services to be ready
-echo "⏳ Waiting for services to be healthy..."
+# Start database (if not running)
+echo "🗄️  Ensuring database is running..."
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT up -d db
+
+# Wait for database
+echo "⏳ Waiting for database to be ready..."
 sleep 10
+
+# Database is ready, now stop old app container
+echo "⏸️  Stopping old application..."
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT stop app || true
+
+# Start new app (migrations will run automatically via CMD in Dockerfile)
+echo "🚀 Starting new application (migrations will run)..."
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT up -d app
+
+# Wait for app to start
+echo "⏳ Waiting for application to start..."
+sleep 15
 
 # Health check
 echo "🏥 Running health check..."
-MAX_RETRIES=15
+MAX_RETRIES=20
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if curl -f http://localhost:$APP_PORT/health > /dev/null 2>&1; then
         echo "✅ Health check passed!"
+        
+        # Remove old containers
+        docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT rm -f || true
+        
+        # Remove old backup (deployment successful)
+        rm -f $BACKUP_FILE || true
+        
         echo "🎉 Deployment successful!"
         echo "🔗 Application: http://localhost:$APP_PORT"
         echo "🔗 API Docs: http://localhost:$APP_PORT/docs"
@@ -68,13 +87,27 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     sleep 5
 done
 
-# Health check failed - show logs and rollback
+# Health check failed - rollback!
 echo "❌ Health check failed after $MAX_RETRIES attempts"
 echo "📋 Application logs:"
-docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT logs --tail=50 app
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT logs --tail=100 app
 
-echo "🔄 Rolling back..."
-docker compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down
+echo "🔄 Rolling back database and application..."
 
-echo "❌ Deployment failed!"
+# Stop failed containers
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT down
+
+# Restore database from backup if it exists
+if [ -f "$BACKUP_FILE" ]; then
+    echo "💾 Restoring database from backup..."
+    docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT up -d db
+    sleep 10
+    cat $BACKUP_FILE | docker exec -i todo-db-${ENVIRONMENT} psql -U postgres tododb
+    echo "✅ Database restored"
+fi
+
+# Start old version
+docker-compose --env-file $ENV_FILE -p todo-$ENVIRONMENT up -d
+
+echo "❌ Deployment failed and rolled back!"
 exit 1

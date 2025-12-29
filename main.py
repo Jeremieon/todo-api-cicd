@@ -15,9 +15,9 @@ app = FastAPI(title=settings.app_name, version=settings.version)
 deployment_time = time.time()
 
 
-@app.on_event("startup")
-def on_startup():
-    models.Base.metadata.create_all(bind=engine)
+# @app.on_event("startup")
+# def on_startup():
+#     models.Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")
